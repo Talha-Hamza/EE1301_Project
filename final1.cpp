@@ -30,7 +30,9 @@ void triggerPersonAlert();
 
 bool rightPackageDetected = false;
 bool motionDetected = false;
-unsigned long motionAlertDuration = 0;
+unsigned long motionAlertStartTime = 0;
+unsigned long packageAlertStartTime = 0;
+const unsigned long packageAlertDuration = 5000; // 5 seconds
 
 // Left Photon - Outdoor with HC-SR04
 int leftTrigPin1 = A0;
@@ -79,11 +81,22 @@ void loop()
     {
         rightPackageDetected = true;
         motionDetected = false;
-        motionAlertDuration = 0;
+        motionAlertStartTime = 0;
+
+        if (packageAlertStartTime == 0)
+        {
+            packageAlertStartTime = millis();
+        }
+        else if (millis() - packageAlertStartTime >= packageAlertDuration)
+        {
+            triggerPackageAlert();
+            packageAlertStartTime = 0;
+        }
     }
     else
     {
         rightPackageDetected = false;
+        packageAlertStartTime = 0;
     }
 
     if (rightPackageDetected)
@@ -183,7 +196,7 @@ double getTemperature(int tmp36Pin)
 void motionHandler(const char *event, const char *data)
 {
     motionDetected = true;
-    motionAlertDuration = millis();
+    motionAlertStartTime = millis();
 }
 
 void triggerPackageAlert()
