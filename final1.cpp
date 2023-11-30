@@ -95,7 +95,7 @@ void loop()
         triggerPersonAlert();
     }
 
-    if (tempC > 25.0)
+    if (tempC > 10.0)
     {
         Particle.publish("outdoor_conditions", "High temperature detected");
     }
