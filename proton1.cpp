@@ -20,17 +20,58 @@ int minDist = 0;
 
 double dist_upper = 0.0;
 double dist_lower = 0.0;
-
-
 double tempC = 0.0;
 
+// Particle variables
+double p1_distance_upper;
+double p1_distance_lower;
+double temperature;
+
+double getTemperature(int tmp36Pin);
 
 void waitForEcho(int pin, int value, long timeout);
 void sendTriggerPulse(int pin);
 double getDistanceCM(int trigPin, int echoPin);
 
-double getTemperature(int tmp36Pin);
+void setup()
+{
+    pinMode(upper_trigPin, OUTPUT);
+    pinMode(upper_echoPin, INPUT);
 
+    pinMode(lower_trigPin, OUTPUT);
+    pinMode(lower_echoPin, INPUT);
+
+    pinMode(tmp36Pin, INPUT);
+
+    // Register Particle variables
+    Particle.variable("p1_distance_upper", p1_distance_upper);
+    Particle.variable("p1_distance_lower", p1_distance_lower);
+    Particle.variable("temperature", temperature);
+}
+
+void loop()
+{
+    dist_upper = getDistanceCM(upper_trigPin, upper_echoPin);
+    dist_lower = getDistanceCM(lower_trigPin, lower_echoPin);
+    tempC = getTemperature(tmp36Pin);
+
+    // Update Particle variables
+    p1_distance_upper = dist_upper;
+    p1_distance_lower = dist_lower;
+    temperature = tempC;
+
+    // No need to use Particle.publish here
+    delay(1000);
+}
+
+double getTemperature(int tmp36Pin)
+{
+    int ADCreading = analogRead(tmp36Pin);
+    tempC = (ADCreading - 620) * 0.0806;
+    // Serial.print(ADCreading);
+    // Serial.print(tempC);
+    return tempC;
+}
 
 double getDistanceCM(int trigPin, int echoPin)
 {
@@ -61,52 +102,4 @@ void waitForEcho(int pin, int value, long timeout)
     while (digitalRead(pin) != value && millis() < giveupTime)
     {
     }
-}
-
-void setup()
-{
-    pinMode(upper_trigPin, OUTPUT);
-    pinMode(upper_echoPin, INPUT);
-
-    pinMode(lower_trigPin, OUTPUT);
-    pinMode(lower_echoPin, INPUT);
-
-    pinMode(tmp36Pin, INPUT);   
-}
-
-void loop()
-{
-    dist_upper = getDistanceCM(upper_trigPin, upper_echoPin);
-
-    dist_lower = getDistanceCM(lower_trigPin, lower_echoPin);
-
-    
-    tempC = getTemperature(tmp36Pin);
-
-    Serial.print("Distance at 2ft: ");
-    Serial.println(dist_upper);
-    Serial.print("Distance at ground: ");
-    Serial.println(dist_lower);
-
-
-    Serial.print("Temperature-C: ");
-    Serial.println(tempC);
-    Serial.println();
-
-    // publish the data
-    Particle.publish("p1_distance_upper", String(dist_upper));
-    delay(1000);
-    Particle.publish("p1_distance_lower", String(dist_lower));
-    delay(1000);
-    Particle.publish("temperature", String(tempC));
-    delay(1000);
-}
-
-double getTemperature(int tmp36Pin)
-{
-    int ADCreading = analogRead(tmp36Pin);
-    tempC = (ADCreading - 620) * 0.0806;
-    // Serial.print(ADCreading);
-    // Serial.print(tempC);
-    return tempC;
 }
