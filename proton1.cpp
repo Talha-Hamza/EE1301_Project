@@ -64,7 +64,7 @@ void publishActivity(String currentActivity)
 {
     if (currentActivity != prevActivity)
     {
-        Particle.publish("p1_activity", currentActivity);
+        Particle.publish("p2_activity", currentActivity);
         prevActivity = currentActivity;
     }
 }
