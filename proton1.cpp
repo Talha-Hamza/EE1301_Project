@@ -28,9 +28,10 @@ double tempC = 0.0;
 void waitForEcho(int pin, int value, long timeout);
 void sendTriggerPulse(int pin);
 double getDistanceCM(int trigPin, int echoPin);
-
 double getTemperature(int tmp36Pin);
-
+bool activity_lower();
+bool activity_upper();
+bool activity_both();
 
 double getDistanceCM(int trigPin, int echoPin)
 {
@@ -63,6 +64,53 @@ void waitForEcho(int pin, int value, long timeout)
     }
 }
 
+// if there is activity at the lower sensor for 5 seconds, return true, withouy using delays
+bool activity_lower()
+{
+    unsigned long startTime = millis();
+    unsigned long endTime = startTime + 5000;
+    while (millis() < endTime)
+    {
+        if (dist_lower < 50)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+// if there is activity at the upper sensor for 5 seconds, return true, withouy using delays
+bool activity_upper()
+{
+    unsigned long startTime = millis();
+    unsigned long endTime = startTime + 5000;
+    while (millis() < endTime)
+    {
+        if (dist_upper < 50)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+// if there is activity at both sensors for 5 seconds, return true, withouy using delays
+bool activity_both()
+{
+    unsigned long startTime = millis();
+    unsigned long endTime = startTime + 5000;
+    while (millis() < endTime)
+    {
+        if (dist_upper < 50 && dist_lower < 50)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
 void setup()
 {
     pinMode(upper_trigPin, OUTPUT);
@@ -72,8 +120,8 @@ void setup()
     pinMode(lower_echoPin, INPUT);
 
     pinMode(tmp36Pin, INPUT);   
-    // setup a particle variable for temperature
     Particle.variable("temperature", tempC);
+
 }
 
 void loop()
@@ -86,23 +134,55 @@ void loop()
     Serial.println(dist_upper);
     Serial.print("Distance at ground: ");
     Serial.println(dist_lower);
-
-
-    Serial.print("Temperature-C: ");
+    Serial.print("Temperature: ");
     Serial.println(tempC);
-    Serial.println();
 
-    // publish the data
-    Particle.publish("p1_distance_upper", String(dist_upper));
-    delay(1000);
-    Particle.publish("p1_distance_lower", String(dist_lower));
-    delay(1000);
-    Particle.publish("temperature", String(tempC));
-    delay(1000);
-}
+    String activity = "none"; // Default value
 
-double getTemperature(int tmp36Pin)
-{
+    if (activity_lower())
+    {
+        Serial.println("Activity at lower sensor");
+        if (activity != "lower")
+        {
+            Particle.publish("p1_activity", "lower");
+            activity = "lower";
+        }
+    }
+    else if (activity_upper())
+    {
+        Serial.println("Activity at upper sensor");
+        if (activity != "upper")
+        {
+            Particle.publish("p1_activity", "upper");
+            activity = "upper";
+        }
+    }
+    else if (activity_both())
+    {
+        Serial.println("Activity at both sensors");
+        if (activity != "both")
+        {
+            Particle.publish("p1_activity", "both");
+            activity = "both";
+        }
+    }
+    else
+    {
+    Serial.println("No activity");
+        if (activity != "none")
+        {
+            Particle.publish("p1_activity", "none");
+            activity = "none";
+        }
+
+    Serial.println(activity);
+    // Particle.publish("p1_activity", activity);
+
+    delay(1000);
+    }
+
+
+double getTemperature(int tmp36Pin){
     int ADCreading = analogRead(tmp36Pin);
     tempC = (ADCreading - 620) * 0.0806;
     // Serial.print(ADCreading);
