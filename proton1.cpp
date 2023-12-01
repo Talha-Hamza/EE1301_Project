@@ -13,25 +13,21 @@ int upper_echoPin = D0;
 int lower_trigPin = A1;
 int lower_echoPin = D1;
 
-int tmp36Pin = A4;
-
 int maxDist = 200;
 int minDist = 0;
 
 double dist_upper = 0.0;
 double dist_lower = 0.0;
 
+String prevActivity = "none"; // Variable to store previous activity status
 
-double tempC = 0.0;
-
+unsigned long startTime = 0;
 
 void waitForEcho(int pin, int value, long timeout);
 void sendTriggerPulse(int pin);
 double getDistanceCM(int trigPin, int echoPin);
-double getTemperature(int tmp36Pin);
 bool activity_lower();
 bool activity_upper();
-bool activity_both();
 
 double getDistanceCM(int trigPin, int echoPin)
 {
@@ -64,52 +60,26 @@ void waitForEcho(int pin, int value, long timeout)
     }
 }
 
-// if there is activity at the lower sensor for 5 seconds, return true, withouy using delays
+void publishActivity(String currentActivity)
+{
+    if (currentActivity != prevActivity)
+    {
+        Particle.publish("p1_activity", currentActivity);
+        prevActivity = currentActivity;
+    }
+}
+
+// if there is activity at the lower sensor, return true
 bool activity_lower()
 {
-    unsigned long startTime = millis();
-    unsigned long endTime = startTime + 5000;
-    while (millis() < endTime)
-    {
-        if (dist_lower < 50)
-        {
-            return true;
-        }
-    }
-    return false;
+    return dist_lower < 50;
 }
 
-// if there is activity at the upper sensor for 5 seconds, return true, withouy using delays
+// if there is activity at the upper sensor, return true
 bool activity_upper()
 {
-    unsigned long startTime = millis();
-    unsigned long endTime = startTime + 5000;
-    while (millis() < endTime)
-    {
-        if (dist_upper < 50)
-        {
-            return true;
-        }
-    }
-    return false;
+    return dist_upper < 50;
 }
-
-// if there is activity at both sensors for 5 seconds, return true, withouy using delays
-bool activity_both()
-{
-    unsigned long startTime = millis();
-    unsigned long endTime = startTime + 5000;
-    while (millis() < endTime)
-    {
-        if (dist_upper < 50 && dist_lower < 50)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-
 
 void setup()
 {
@@ -119,73 +89,48 @@ void setup()
     pinMode(lower_trigPin, OUTPUT);
     pinMode(lower_echoPin, INPUT);
 
-    pinMode(tmp36Pin, INPUT);   
-    Particle.variable("temperature", tempC);
-
+    startTime = millis();
 }
 
 void loop()
 {
     dist_upper = getDistanceCM(upper_trigPin, upper_echoPin);
     dist_lower = getDistanceCM(lower_trigPin, lower_echoPin);
-    tempC = getTemperature(tmp36Pin);
 
     Serial.print("Distance at 2ft: ");
     Serial.println(dist_upper);
     Serial.print("Distance at ground: ");
     Serial.println(dist_lower);
-    Serial.print("Temperature: ");
-    Serial.println(tempC);
 
-    String activity = "none"; // Default value
+    unsigned long currentTime = millis();
+    unsigned long elapsedTime = currentTime - startTime;
 
-    if (activity_lower())
+    if (elapsedTime >= 5000)
     {
-        Serial.println("Activity at lower sensor");
-        if (activity != "lower")
+        if (activity_lower() && activity_upper())
         {
-            Particle.publish("p1_activity", "lower");
-            activity = "lower";
+            Serial.println("Activity at both sensors");
+            publishActivity("both");
         }
-    }
-    else if (activity_upper())
-    {
-        Serial.println("Activity at upper sensor");
-        if (activity != "upper")
+        else if (activity_lower())
         {
-            Particle.publish("p1_activity", "upper");
-            activity = "upper";
+            Serial.println("Activity at lower sensor");
+            publishActivity("lower");
         }
-    }
-    else if (activity_both())
-    {
-        Serial.println("Activity at both sensors");
-        if (activity != "both")
+        else if (activity_upper())
         {
-            Particle.publish("p1_activity", "both");
-            activity = "both";
+            Serial.println("Activity at upper sensor");
+            publishActivity("upper");
         }
-    }
-    else
-    {
-    Serial.println("No activity");
-        if (activity != "none")
+        else
         {
-            Particle.publish("p1_activity", "none");
-            activity = "none";
+            Serial.println("No activity");
+            publishActivity("none");
         }
 
-    Serial.println(activity);
-    // Particle.publish("p1_activity", activity);
+        // Reset the timer
+        startTime = millis();
+    }
 
     delay(1000);
-    }
-}
-
-double getTemperature(int tmp36Pin){
-    int ADCreading = analogRead(tmp36Pin);
-    tempC = (ADCreading - 620) * 0.0806;
-    // Serial.print(ADCreading);
-    // Serial.print(tempC);
-    return tempC;
 }
