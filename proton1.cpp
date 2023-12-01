@@ -180,7 +180,7 @@ void loop()
 
     delay(1000);
     }
-
+}
 
 double getTemperature(int tmp36Pin){
     int ADCreading = analogRead(tmp36Pin);
