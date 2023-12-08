@@ -95,7 +95,6 @@ void setup() {
   pinMode(buttonPIN, INPUT_PULLDOWN);
   Serial.begin(9600);
 
-  Particle.variable("p1_distance_lower", lDistanceLower);
 
   // subscribe to cloud events for distance sensor
   Particle.subscribe("p1_activity", distanceHandlerUpdate);
