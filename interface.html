@@ -1,0 +1,63 @@
+<!DOCTYPE HTML>
+<html>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+  <head>
+    <title>Doorman Monitor</title>
+  </head>
+  <style>
+  body {
+    background-color: lightblue;
+  }
+  </style>
+  <body>
+  <b>Interact with your doorman remotely:</b>
+  <br><br>
+  Current Temperature:<span id="html_temperature"></span>&deg; C<br>
+  <button id="connectbutton" onclick="start()">Refresh Data</button>
+  <br><br>
+  <img src="partlycloudy.jpg" alt="Partly Cloudy" width="437" height="">
+  <br>
+  <img src="snowflake.jpg" alt="Snowflake" width="437" height="310">
+  <br><br>
+
+  <!-- Current Package Stutus, Adjust Distance Sensitivity, and Disable Monitoring features
+  are still in development phase. Although we were unable to finish implementing these 
+  features before the showcase, we left them in the code to demonstrate future capabilities
+  upon further development of this project, since engineering is a continual process and
+  desgin in never finished. -->
+
+  Current Package Status:<span id="html_distance"></span><br>
+  <button id="refreshbutton" onclick="start()">Refresh Data</button>
+  <br><br>
+
+  Adjust Distance Sensitivity:
+  <form action="https://api.particle.io/v1/devices/deviceID/cloudVarName?access_token=accesstoken" method="POST">
+    <input type="text" name="args" value="(0-200)"><br>
+    <input type="submit" value="Set Distance">
+    </form>
+      
+  <script type="text/javascript">
+    function start(objButton) {
+        var deviceID = "19002a001047313134383335";
+        var accessToken = "f42e252016e447148d56c12e9cb7c3aada0709b9";
+        var baseURL = "https://api.particle.io/v1/devices/"
+        var varName = "temperature"; // cloud variable name
+
+        requestURL = baseURL + deviceID + "/" + varName + "/?access_token=" + accessToken;
+        $.getJSON(requestURL, function(json) {
+                 document.getElementById("html_temperature").innerHTML = json.result;
+                 });
+
+        var varName = "p1_distance_lower";  // another cloud variable name
+
+        requestURL = baseURL + deviceID + "/" + varName + "/?access_token=" + accessToken;
+        $.getJSON(requestURL, function(json) {
+                 document.getElementById("html_distance").innerHTML = json.result;
+                 });
+    }
+  </script><br><br>
+
+  <button id="disabledoorman" onclick="start()">Disable Monitoring</button>
+
+  </body>
+</html>
